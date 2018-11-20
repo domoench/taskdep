@@ -15,12 +15,12 @@ class App extends React.Component {
     // this.renderGraph = this.renderGraph.bind(this); // TODO necessary?
     this.addNode = this.addNode.bind(this);
     this.addEdge = this.addEdge.bind(this);
-    /*
+		/*
     this.state = {
       nodes: [],
       links: [],
     }
-    */
+		*/
     this.state = {
       nodes: [
         {"id": "a", "text": "node a"},
@@ -29,9 +29,11 @@ class App extends React.Component {
         {"id": "d", "text": "node d"},
       ],
       links: [
+				/*
         {"source": "a", "target": "b"},
         {"source": "a", "target": "c"},
-        {"source": "c", "target": "d"},
+        {"source": "a", "target": "d"},
+				*/
       ],
     }
   }
@@ -45,7 +47,8 @@ class App extends React.Component {
   }
 
   renderGraph() {
-		console.log('renderGraph() state: ', this.state);
+		const { nodes, links } = this.state;
+
     // Many ideas used from https://beta.observablehq.com/@mbostock/d3-force-directed-graph
     //const svg = select(this.appRef);
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
@@ -55,19 +58,17 @@ class App extends React.Component {
         .force("charge", forceManyBody())
         .force("center", forceCenter(width / 2, height / 2));
 
-    const link = svg.append('g')
-        .attr('class', 'links')
+    const link = svg.select('.links')
       .selectAll('line')
-      .data(this.state.links)
+      .data(links)
       .enter().append('line')
         .attr('stroke-width', d => 2);
 
 		link.exit().remove();
 
-    const node = svg.append('g')
-         .attr('class', 'nodes')
+    const node = svg.select('.nodes')
       .selectAll('g')
-      .data(this.state.nodes)
+      .data(nodes)
       .enter().append('g');
 
 		node.exit().remove();
@@ -77,16 +78,27 @@ class App extends React.Component {
       .attr('r', 10)
       .attr('fill', 'red');
 
+		// labels
+		node.append("text")
+      .text(d => d.text)
+      .attr('x', 6)
+      .attr('y', 3);
+
+		// Bind data to simulation
 		simulation
-      .nodes(this.state.nodes)
+      .nodes(nodes)
       .on('tick', ticked);
 
 		simulation.force('link')
-				.links(this.state.links);
+				.links(links);
 
+		// Must restart to re-energize old nodes when new ones are added via user interaction: https://github.com/d3/d3-force#simulation_restart
+		// Setting alphaTarget is essential to ensure links stay synced to nodes, but I don't know why
+		simulation.alphaTarget(0.01).restart();
+
+		// Updates the line end and circle render positions to their new positions
+		// resulting from this tick of force calculations
 		function ticked() {
-			// update the line end and circle render positions to their new
-			// positions resulting from this tick of force calculations
 			link
 					.attr('x1', function(d) { return d.source.x; })
 					.attr('y1', function(d) { return d.source.y; })
@@ -98,10 +110,12 @@ class App extends React.Component {
 						return 'translate(' + d.x + ',' + d.y + ')';
 					})
 		}
-
   }
 
   componentDidMount() {
+    const svg = select('.graphviz'); // Why does this work and not the appRef selector?
+    svg.append('g').attr('class', 'links');
+    svg.append('g').attr('class', 'nodes');
     this.renderGraph();
   }
 
@@ -156,8 +170,8 @@ class EdgeForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      source: '',
-      target: '',
+      source: this.props.nodes[0].id,
+      target: this.props.nodes[0].id,
     };
     this.handleSourceChange = this.handleSourceChange.bind(this);
     this.handleTargetChange = this.handleTargetChange.bind(this);
@@ -165,10 +179,12 @@ class EdgeForm extends React.Component {
   }
 
   handleSourceChange(event) {
+		console.log('set source to ', event.target.value);
     this.setState({source: event.target.value});
   }
 
   handleTargetChange(event) {
+		console.log('set target to ', event.target.value);
     this.setState({target: event.target.value});
   }
 
