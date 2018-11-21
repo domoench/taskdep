@@ -15,12 +15,12 @@ class App extends React.Component {
     // this.renderGraph = this.renderGraph.bind(this); // TODO necessary?
     this.addNode = this.addNode.bind(this);
     this.addEdge = this.addEdge.bind(this);
-		/*
+    /*
     this.state = {
       nodes: [],
       links: [],
     }
-		*/
+    */
     this.state = {
       nodes: [
         {"id": "a", "text": "node a"},
@@ -29,11 +29,11 @@ class App extends React.Component {
         {"id": "d", "text": "node d"},
       ],
       links: [
-				/*
+        /*
         {"source": "a", "target": "b"},
         {"source": "a", "target": "c"},
         {"source": "a", "target": "d"},
-				*/
+        */
       ],
     }
   }
@@ -47,9 +47,11 @@ class App extends React.Component {
   }
 
   renderGraph() {
-		const { nodes, links } = this.state;
+    const { nodes, links } = this.state;
 
-    // Many ideas used from https://beta.observablehq.com/@mbostock/d3-force-directed-graph
+    // Many ideas used from
+    //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
+    //   http://bl.ocks.org/rkirsling/5001347
     //const svg = select(this.appRef);
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
 
@@ -62,60 +64,76 @@ class App extends React.Component {
       .selectAll('line')
       .data(links)
       .enter().append('line')
-        .attr('stroke-width', d => 2);
+        .attr('stroke-width', d => 2)
+        .attr('marker-end', 'url(#arrow)');
 
-		link.exit().remove();
+    link.exit().remove();
 
     const node = svg.select('.nodes')
       .selectAll('g')
       .data(nodes)
       .enter().append('g');
 
-		node.exit().remove();
+    node.exit().remove();
 
-		// circles
+    // circles
     node.append('circle')
       .attr('r', 10)
       .attr('fill', 'red');
 
-		// labels
-		node.append("text")
+    // labels
+    node.append("text")
       .text(d => d.text)
       .attr('x', 6)
       .attr('y', 3);
 
-		// Bind data to simulation
-		simulation
+    // Bind data to simulation
+    simulation
       .nodes(nodes)
       .on('tick', ticked);
 
-		simulation.force('link')
-				.links(links);
+    simulation.force('link')
+        .links(links)
+        .distance(100);
 
-		// Must restart to re-energize old nodes when new ones are added via user interaction: https://github.com/d3/d3-force#simulation_restart
-		// Setting alphaTarget is essential to ensure links stay synced to nodes, but I don't know why
-		simulation.alphaTarget(0.01).restart();
+    // Must restart to re-energize old nodes when new ones are added via user interaction: https://github.com/d3/d3-force#simulation_restart
+    // Setting alphaTarget is essential to ensure links stay synced to nodes, but I don't know why
+    simulation.alphaTarget(0.01).restart();
 
-		// Updates the line end and circle render positions to their new positions
-		// resulting from this tick of force calculations
-		function ticked() {
-			link
-					.attr('x1', function(d) { return d.source.x; })
-					.attr('y1', function(d) { return d.source.y; })
-					.attr('x2', function(d) { return d.target.x; })
-					.attr('y2', function(d) { return d.target.y; });
+    // Updates the line end and circle render positions to their new positions
+    // resulting from this tick of force calculations
+    function ticked() {
+      link
+          .attr('x1', function(d) { return d.source.x; })
+          .attr('y1', function(d) { return d.source.y; })
+          .attr('x2', function(d) { return d.target.x; })
+          .attr('y2', function(d) { return d.target.y; });
 
-			node
-					.attr('transform', function(d) {
-						return 'translate(' + d.x + ',' + d.y + ')';
-					})
-		}
+      node
+          .attr('transform', function(d) {
+            return 'translate(' + d.x + ',' + d.y + ')';
+          })
+    }
   }
 
   componentDidMount() {
+    // Perform d3 setup that only needs to happen once
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
+    // Arrow marker def
+    svg.append('svg:defs').append('svg:marker')
+        .attr('id', 'arrow')
+        .attr('viewBox', '0 0 10 10')
+        .attr('refX', 18)
+        .attr('refY', 5)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+      .append('svg:path')
+        .attr('d', 'M 0 0 L 10 5 L 0 10 z');
+
     svg.append('g').attr('class', 'links');
     svg.append('g').attr('class', 'nodes');
+
     this.renderGraph();
   }
 
@@ -179,12 +197,12 @@ class EdgeForm extends React.Component {
   }
 
   handleSourceChange(event) {
-		console.log('set source to ', event.target.value);
+    console.log('set source to ', event.target.value);
     this.setState({source: event.target.value});
   }
 
   handleTargetChange(event) {
-		console.log('set target to ', event.target.value);
+    console.log('set target to ', event.target.value);
     this.setState({target: event.target.value});
   }
 
@@ -208,7 +226,7 @@ class EdgeForm extends React.Component {
         </label>
 
         <label>
-          Edge to:
+          Edge Target:
           <select value={this.state.target} onChange={this.handleTargetChange}>
             {
               this.props.nodes.map(node  => (
