@@ -2,8 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import uuidv4 from 'uuid/v4';
 import './index.css';
-import { select } from 'd3-selection'
-import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force'
+import { select } from 'd3-selection';
+import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force';
+import { cloneDeep } from 'lodash';
 
 const width = 960;
 const height = 600;
@@ -24,25 +25,27 @@ class App extends React.Component {
     */
     this.state = {
       nodes: [
-        {'id': 'a', 'text': 'node a', 'val': 2},
-        {'id': 'b', 'text': 'node b', 'val': 1},
-        {'id': 'c', 'text': 'node c', 'val': 4},
-        {'id': 'd', 'text': 'node d', 'val': 1},
+        {id: 'a', text: 'node a', val: 1},
+        {id: 'b', text: 'node b', val: 2},
+        {id: 'c', text: 'node c', val: 4},
+        {id: 'd', text: 'node d', val: 6},
       ],
       links: [
-        {'source': 'c', 'target': 'b'},
-        {'source': 'c', 'target': 'a'},
-        {'source': 'a', 'target': 'd'},
+        {source: 'c', target: 'b'},
+        {source: 'c', target: 'a'},
+        {source: 'a', target: 'd'},
       ],
     }
   }
 
   addNode(text) {
-    this.setState({nodes: [...this.state.nodes, {id: uuidv4(), text: text}]});
+    const { nodes } = this.state;
+    this.setState({nodes: [...cloneDeep(nodes), {id: uuidv4(), text: text, val: 1}]});
   }
 
   addEdge(source, target) {
-    this.setState({links: [...this.state.links, {source: source, target: target}]});
+    const { links } = this.state;
+    this.setState({links: [...cloneDeep(links), {source: source, target: target}]});
   }
 
   updateNodeText(id, text) {
@@ -52,15 +55,17 @@ class App extends React.Component {
     if (i === -1) {
       alert('oops'); // TODO
     }
-    // Update the text
     const node = nodes[i];
-    const updatedNode = {id: node.id, text: text, x: node.x, y: node.y};
-    this.setState({nodes: [...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)]});
+    // Update the text
+    const updatedNode = {id: node.id, text: text, val: 1};
+    this.setState({nodes: [...cloneDeep(nodes.slice(0, i)), updatedNode, ...cloneDeep(nodes.slice(i+1))]});
   }
 
   renderGraph() {
-    console.log('renderGraph(). state: ', this.state);
-    const { nodes, links } = this.state;
+    // Must make a copy of nodes + links from state because d3 will modify (e.g. adding
+    // position and velocity attributes to nodes)
+    const nodes = cloneDeep(this.state.nodes);
+    const links = cloneDeep(this.state.links);
 
     // Many ideas used from
     //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
@@ -167,7 +172,6 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    console.log('componentDidMount(). state: ', this.state);
     // Perform d3 setup that only needs to happen once
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
     // Arrow marker def
@@ -189,13 +193,11 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {
-    console.log('componentDidUpdate(). state: ', this.state);
     this.renderGraph();
   }
 
   render() {
     const { nodes, links } = this.state;
-    console.log('render(). state: ', this.state);
     return (
       <div>
         <svg width={width} height={height} className="graphviz" ref={this.appRef} />
@@ -220,7 +222,6 @@ class NodeForm extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
-    console.log('A name was submitted: ' + this.state.value);
     this.props.addNode(this.state.value);
   }
 
@@ -250,12 +251,10 @@ class EdgeForm extends React.Component {
   }
 
   handleSourceChange(event) {
-    console.log('set source to ', event.target.value);
     this.setState({source: event.target.value});
   }
 
   handleTargetChange(event) {
-    console.log('set target to ', event.target.value);
     this.setState({target: event.target.value});
   }
 
