@@ -21,6 +21,7 @@ class App extends React.Component {
     this.state = {
       nodes: [],
       links: [],
+      selectedNode: '',
     }
     */
     this.state = {
@@ -35,6 +36,7 @@ class App extends React.Component {
         {source: 'c', target: 'a'},
         {source: 'a', target: 'd'},
       ],
+      selectedNode: 'a',
     }
   }
 
@@ -58,7 +60,10 @@ class App extends React.Component {
     const node = nodes[i];
     // Update the text
     const updatedNode = {id: node.id, text: text, val: 1};
-    this.setState({nodes: [...cloneDeep(nodes.slice(0, i)), updatedNode, ...cloneDeep(nodes.slice(i+1))]});
+    this.setState({
+      nodes: [...cloneDeep(nodes.slice(0, i)), updatedNode, ...cloneDeep(nodes.slice(i+1))],
+      selectedNode: node.id,
+    });
   }
 
   renderGraph() {
@@ -116,14 +121,18 @@ class App extends React.Component {
     link.exit().remove();
 
     // NODES
-    const node = svg.select('.nodes').selectAll('g').data(nodes);
-    const nodeEnter = node.enter().append('g');
+    // Node Update
+    const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes);
+    nodeUpdate.select('text')
+        .text(d => d.text);
+    nodeUpdate.select('circle').attr('fill', d => d.id === this.state.selectedNode ? 'blue' : 'red');
 
     // Node Enter
     // circles
+    const nodeEnter = nodeUpdate.enter().append('g');
     const circles = nodeEnter.append('circle')
       .attr('r', 10)
-      .attr('fill', 'red');
+      .attr('fill', d => d.id === this.state.selectedNode ? 'blue' : 'red');
 
     // labels
     nodeEnter.append("text")
@@ -131,12 +140,8 @@ class App extends React.Component {
       .attr('x', 6)
       .attr('y', 3);
 
-    // Node Update
-    node.select('text')
-        .text(d => d.text);
-
     // Node remove
-    node.exit().remove();
+    nodeUpdate.exit().remove();
 
     // Bind data to simulation
     simulation
