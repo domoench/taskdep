@@ -15,6 +15,7 @@ class App extends React.Component {
     // this.renderGraph = this.renderGraph.bind(this); // TODO necessary?
     this.addNode = this.addNode.bind(this);
     this.addEdge = this.addEdge.bind(this);
+    this.updateNodeText = this.updateNodeText.bind(this);
     /*
     this.state = {
       nodes: [],
@@ -23,17 +24,15 @@ class App extends React.Component {
     */
     this.state = {
       nodes: [
-        {"id": "a", "text": "node a"},
-        {"id": "b", "text": "node b"},
-        {"id": "c", "text": "node c"},
-        {"id": "d", "text": "node d"},
+        {'id': 'a', 'text': 'node a', 'val': 2},
+        {'id': 'b', 'text': 'node b', 'val': 1},
+        {'id': 'c', 'text': 'node c', 'val': 4},
+        {'id': 'd', 'text': 'node d', 'val': 1},
       ],
       links: [
-        /*
-        {"source": "a", "target": "b"},
-        {"source": "a", "target": "c"},
-        {"source": "a", "target": "d"},
-        */
+        {'source': 'c', 'target': 'b'},
+        {'source': 'c', 'target': 'a'},
+        {'source': 'a', 'target': 'd'},
       ],
     }
   }
@@ -46,7 +45,21 @@ class App extends React.Component {
     this.setState({links: [...this.state.links, {source: source, target: target}]});
   }
 
+  updateNodeText(id, text) {
+    const { nodes } = this.state;
+    // Find the node that matches the id
+    const i = nodes.findIndex(e => e.id === id);
+    if (i === -1) {
+      alert('oops'); // TODO
+    }
+    // Update the text
+    const node = nodes[i];
+    const updatedNode = {id: node.id, text: text, x: node.x, y: node.y};
+    this.setState({nodes: [...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)]});
+  }
+
   renderGraph() {
+    console.log('renderGraph(). state: ', this.state);
     const { nodes, links } = this.state;
 
     // Many ideas used from
@@ -55,11 +68,38 @@ class App extends React.Component {
     //const svg = select(this.appRef);
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
 
-    const simulation = forceSimulation()
-        .force("link", forceLink().id(function(d) { return d.id; }))
-        .force("charge", forceManyBody())
-        .force("center", forceCenter(width / 2, height / 2));
+    // Custom downwards force
+    const forceDown = alpha => {
+      for (let i = 0; i < nodes.length; ++i) {
+        const k = alpha * 0.1;
+        const node = nodes[i];
+        const dyB = height - node.y; // Dist from bottom
+        node.vy -= dyB * k;
+      }
+    }
 
+    // Custom upwards force
+    // Equal to downwards force if nodes have same value, but stronger
+    // for higher values, so higher value nodes rise to the top.
+    const forceUp = alpha => {
+      for (let i = 0; i < nodes.length; ++i) {
+        const k = alpha * 0.1;
+        const node = nodes[i];
+        const v = node.val;
+        const dyT = node.y // Dist from top
+        node.vy -= (dyT * k) + (v * 0.03);
+      }
+    }
+
+    const simulation = forceSimulation()
+        .force('link', forceLink().id(function(d) { return d.id; }))
+        .force('charge', forceManyBody().strength(-150))
+        .force('center', forceCenter(width / 2, height / 2))
+        .force('up', forceUp)
+        .force('down', forceDown);
+
+    // LINKS
+    // Link Enter
     const link = svg.select('.links')
       .selectAll('line')
       .data(links)
@@ -67,25 +107,31 @@ class App extends React.Component {
         .attr('stroke-width', d => 2)
         .attr('marker-end', 'url(#arrow)');
 
+    // Link Remove
     link.exit().remove();
 
-    const node = svg.select('.nodes')
-      .selectAll('g')
-      .data(nodes)
-      .enter().append('g');
+    // NODES
+    const node = svg.select('.nodes').selectAll('g').data(nodes);
+    const nodeEnter = node.enter().append('g');
 
-    node.exit().remove();
-
+    // Node Enter
     // circles
-    node.append('circle')
+    const circles = nodeEnter.append('circle')
       .attr('r', 10)
       .attr('fill', 'red');
 
     // labels
-    node.append("text")
+    nodeEnter.append("text")
       .text(d => d.text)
       .attr('x', 6)
       .attr('y', 3);
+
+    // Node Update
+    node.select('text')
+        .text(d => d.text);
+
+    // Node remove
+    node.exit().remove();
 
     // Bind data to simulation
     simulation
@@ -98,7 +144,7 @@ class App extends React.Component {
 
     // Must restart to re-energize old nodes when new ones are added via user interaction: https://github.com/d3/d3-force#simulation_restart
     // Setting alphaTarget is essential to ensure links stay synced to nodes, but I don't know why
-    simulation.alphaTarget(0.01).restart();
+    simulation.alphaTarget(0.001).restart();
 
     // Updates the line end and circle render positions to their new positions
     // resulting from this tick of force calculations
@@ -109,14 +155,19 @@ class App extends React.Component {
           .attr('x2', function(d) { return d.target.x; })
           .attr('y2', function(d) { return d.target.y; });
 
-      node
+      nodeEnter
           .attr('transform', function(d) {
             return 'translate(' + d.x + ',' + d.y + ')';
           })
     }
+
+    circles.on('click', (d) => {
+      this.updateNodeText(d.id, 'clicked');
+    });
   }
 
   componentDidMount() {
+    console.log('componentDidMount(). state: ', this.state);
     // Perform d3 setup that only needs to happen once
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
     // Arrow marker def
@@ -138,11 +189,13 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {
+    console.log('componentDidUpdate(). state: ', this.state);
     this.renderGraph();
   }
 
   render() {
     const { nodes, links } = this.state;
+    console.log('render(). state: ', this.state);
     return (
       <div>
         <svg width={width} height={height} className="graphviz" ref={this.appRef} />
