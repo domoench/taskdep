@@ -41,16 +41,15 @@ class App extends React.Component {
 
   addNode(text) {
     const { nodes } = this.state;
-    this.setState({nodes: [...cloneDeep(nodes), {id: uuidv4(), text: text, val: 1}]});
+    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text, val: 1}]});
   }
 
   addEdge(source, target) {
     const { links } = this.state;
-    this.setState({links: [...cloneDeep(links), {source: source, target: target}]});
+    this.setState({links: [...links.slice(), {source: source, target: target}]});
   }
 
   selectNode(id) {
-    console.log(`selectNote(${id})`);
     this.setState({selectedNodeId: id});
   }
 
@@ -63,19 +62,24 @@ class App extends React.Component {
     }
     const node = nodes[i];
     // Update the text
-    const updatedNode = {id: node.id, text: text, val: 1};
-    this.setState({nodes: [...cloneDeep(nodes.slice(0, i)), updatedNode, ...cloneDeep(nodes.slice(i+1))]});
+    const updatedNode = {id: node.id, text: text, val: 1, x: node.x, y: node.y, vx: node.vx, vy: node.vy};
+    this.setState({nodes: [...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)]});
   }
 
+  // Many ideas learned from
+  //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
+  //   http://bl.ocks.org/rkirsling/5001347
   renderGraph() {
-    // Must make a copy of nodes + links from state because d3 will modify (e.g. adding
-    // position and velocity attributes to nodes)
-    const nodes = cloneDeep(this.state.nodes);
+    // Nodes: Allow d3 direct access to the react state nodes list. It modifies the elements
+    // of the list (not the list itself). d3 adds x, y, vx, and vy data that we need to persist
+    // between renders.
+    const { nodes } = this.state;
+    // Links: Always pass in a deep lcone of the react-managed list link that refers to
+    // node IDs instead of node object references. d3 updates the link list to refer to
+    // object references, so if we saved that link list to state it would continue to refer
+    // to node objects even after we removed them.
     const links = cloneDeep(this.state.links);
 
-    // Many ideas used from
-    //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
-    //   http://bl.ocks.org/rkirsling/5001347
     //const svg = select(this.appRef);
     const svg = select('.graphviz'); // Why does this work and not the appRef selector?
 
@@ -308,7 +312,6 @@ class EdgeForm extends React.Component {
 
 class NodeEditForm extends React.Component {
   constructor(props) {
-    console.log('NodeEditForm constructor()');
     super(props);
     this.state = {
       value: this.getSelectedNodeText()
@@ -333,7 +336,6 @@ class NodeEditForm extends React.Component {
   }
 
   render() {
-    console.log('NodeEditFOrm render()');
     return (
       <form onSubmit={this.handleSubmit}>
         <label>
