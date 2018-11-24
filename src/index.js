@@ -13,7 +13,6 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.appRef = React.createRef();
-    // this.renderGraph = this.renderGraph.bind(this); // TODO necessary?
     this.addNode = this.addNode.bind(this);
     this.addEdge = this.addEdge.bind(this);
     this.updateNodeText = this.updateNodeText.bind(this);
@@ -21,7 +20,7 @@ class App extends React.Component {
     this.state = {
       nodes: [],
       links: [],
-      selectedNode: '',
+      selectedNodeId: '',
     }
     */
     this.state = {
@@ -36,7 +35,7 @@ class App extends React.Component {
         {source: 'c', target: 'a'},
         {source: 'a', target: 'd'},
       ],
-      selectedNode: 'a',
+      selectedNodeId: 'a',
     }
   }
 
@@ -50,20 +49,22 @@ class App extends React.Component {
     this.setState({links: [...cloneDeep(links), {source: source, target: target}]});
   }
 
+  selectNode(id) {
+    console.log(`selectNote(${id})`);
+    this.setState({selectedNodeId: id});
+  }
+
   updateNodeText(id, text) {
     const { nodes } = this.state;
     // Find the node that matches the id
     const i = nodes.findIndex(e => e.id === id);
     if (i === -1) {
-      alert('oops'); // TODO
+      throw new Error(`node ${id} not found`);
     }
     const node = nodes[i];
     // Update the text
     const updatedNode = {id: node.id, text: text, val: 1};
-    this.setState({
-      nodes: [...cloneDeep(nodes.slice(0, i)), updatedNode, ...cloneDeep(nodes.slice(i+1))],
-      selectedNode: node.id,
-    });
+    this.setState({nodes: [...cloneDeep(nodes.slice(0, i)), updatedNode, ...cloneDeep(nodes.slice(i+1))]});
   }
 
   renderGraph() {
@@ -125,14 +126,14 @@ class App extends React.Component {
     const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes);
     nodeUpdate.select('text')
         .text(d => d.text);
-    nodeUpdate.select('circle').attr('fill', d => d.id === this.state.selectedNode ? 'blue' : 'red');
+    nodeUpdate.select('circle').attr('fill', d => d.id === this.state.selectedNodeId ? 'blue' : 'red');
 
     // Node Enter
     // circles
     const nodeEnter = nodeUpdate.enter().append('g');
     const circles = nodeEnter.append('circle')
       .attr('r', 10)
-      .attr('fill', d => d.id === this.state.selectedNode ? 'blue' : 'red');
+      .attr('fill', d => d.id === this.state.selectedNodeId ? 'blue' : 'red');
 
     // labels
     nodeEnter.append("text")
@@ -172,7 +173,7 @@ class App extends React.Component {
     }
 
     circles.on('click', (d) => {
-      this.updateNodeText(d.id, 'clicked');
+      this.selectNode(d.id);
     });
   }
 
@@ -202,10 +203,16 @@ class App extends React.Component {
   }
 
   render() {
-    const { nodes, links } = this.state;
+    const { nodes, links, selectedNodeId } = this.state;
     return (
       <div>
         <svg width={width} height={height} className="graphviz" ref={this.appRef} />
+        <NodeEditForm
+          key={selectedNodeId} // Need key so selecting new node re-renders NodeEditForm
+          updateNodeText={this.updateNodeText}
+          selectedNodeId={selectedNodeId}
+          nodes={nodes}
+        />
         <NodeForm addNode={this.addNode} />
         <EdgeForm nodes={nodes} links={links} addEdge={this.addEdge} />
       </div>
@@ -293,6 +300,46 @@ class EdgeForm extends React.Component {
           </select>
         </label>
 
+        <input type="submit" value="Submit" />
+      </form>
+    );
+  }
+}
+
+class NodeEditForm extends React.Component {
+  constructor(props) {
+    console.log('NodeEditForm constructor()');
+    super(props);
+    this.state = {
+      value: this.getSelectedNodeText()
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleChange(event) {
+    this.setState({value: event.target.value});
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    this.props.updateNodeText(this.props.selectedNodeId, this.state.value);
+  }
+
+  getSelectedNodeText() {
+    const idx = this.props.nodes.findIndex(e => e.id === this.props.selectedNodeId);
+    return this.props.nodes[idx].text;
+  }
+
+  render() {
+    console.log('NodeEditFOrm render()');
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <label>
+          Edit Node:
+        <input type="text" value={this.state.value} onChange={this.handleChange} />
+        </label>
         <input type="submit" value="Submit" />
       </form>
     );
