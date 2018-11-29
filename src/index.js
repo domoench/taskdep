@@ -26,8 +26,8 @@ class App extends React.Component {
     this.state = {
       nodes: [
         {id: 'a', text: 'node a', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
-        {id: 'b', text: 'node b', val: 2, x: width/2, y: height/2, vx: 0, vy: 0},
-        {id: 'c', text: 'node c', val: 4, x: width/2, y: height/2, vx: 0, vy: 0},
+        {id: 'b', text: 'node b', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
+        {id: 'c', text: 'node c', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
       ],
       links: [
         {source: 'c', target: 'b'},
@@ -110,18 +110,22 @@ class App extends React.Component {
         .force('down', forceDown);
 
     // LINKS
-    // Link Enter
-    const link = svg.select('.links')
+    // Link data bind
+    let link = svg.select('.links')
       .selectAll('line')
-      .data(links)
-      .enter().append('line')
+      .data(links);
+
+    // Link exit
+    link.exit().remove();
+
+    // Link enter + update
+    link = link.enter().append('line')
+      .merge(link)
         .attr('stroke-width', d => 2)
         .attr('marker-end', 'url(#arrow)');
 
-    // Link Remove
-    link.exit().remove();
-
     // NODES
+    // TODO: Update organization to be idiomatic according to general update pattern: https://bl.ocks.org/mbostock/3808218
     // Node Update
     const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes);
     nodeUpdate.select('text')
