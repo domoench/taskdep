@@ -25,15 +25,13 @@ class App extends React.Component {
     */
     this.state = {
       nodes: [
-        {id: 'a', text: 'node a', val: 1},
-        {id: 'b', text: 'node b', val: 2},
-        {id: 'c', text: 'node c', val: 4},
-        {id: 'd', text: 'node d', val: 6},
+        {id: 'a', text: 'node a', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
+        {id: 'b', text: 'node b', val: 2, x: width/2, y: height/2, vx: 0, vy: 0},
+        {id: 'c', text: 'node c', val: 4, x: width/2, y: height/2, vx: 0, vy: 0},
       ],
       links: [
         {source: 'c', target: 'b'},
         {source: 'c', target: 'a'},
-        {source: 'a', target: 'd'},
       ],
       selectedNodeId: 'a',
     }
@@ -49,8 +47,11 @@ class App extends React.Component {
     this.setState({links: [...links.slice(), {source: source, target: target}]});
   }
 
-  selectNode(id) {
-    this.setState({selectedNodeId: id});
+  selectNode(id, d3Nodes) {
+    this.setState({
+      nodes: cloneDeep(d3Nodes),
+      selectedNodeId: id,
+    });
   }
 
   updateNodeText(id, text) {
@@ -61,23 +62,18 @@ class App extends React.Component {
       throw new Error(`node ${id} not found`);
     }
     const node = nodes[i];
+
     // Update the text
     const updatedNode = {id: node.id, text: text, val: 1, x: node.x, y: node.y, vx: node.vx, vy: node.vy};
-    this.setState({nodes: [...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)]});
+    this.setState({nodes: cloneDeep([...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)])});
   }
 
   // Many ideas learned from
   //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
   //   http://bl.ocks.org/rkirsling/5001347
   renderGraph() {
-    // Nodes: Allow d3 direct access to the react state nodes list. It modifies the elements
-    // of the list (not the list itself). d3 adds x, y, vx, and vy data that we need to persist
-    // between renders.
-    const { nodes } = this.state;
-    // Links: Always pass in a deep lcone of the react-managed list link that refers to
-    // node IDs instead of node object references. d3 updates the link list to refer to
-    // object references, so if we saved that link list to state it would continue to refer
-    // to node objects even after we removed them.
+    // Always pass clones of the nodes + links to d3 so it doesn't modify them
+    const nodes = cloneDeep(this.state.nodes);
     const links = cloneDeep(this.state.links);
 
     //const svg = select(this.appRef);
@@ -108,7 +104,7 @@ class App extends React.Component {
 
     const simulation = forceSimulation()
         .force('link', forceLink().id(function(d) { return d.id; }))
-        .force('charge', forceManyBody().strength(-150))
+        .force('charge', forceManyBody().strength(-100))
         .force('center', forceCenter(width / 2, height / 2))
         .force('up', forceUp)
         .force('down', forceDown);
@@ -135,9 +131,11 @@ class App extends React.Component {
     // Node Enter
     // circles
     const nodeEnter = nodeUpdate.enter().append('g');
-    const circles = nodeEnter.append('circle')
+    const circlesEnter = nodeEnter.append('circle')
       .attr('r', 10)
       .attr('fill', d => d.id === this.state.selectedNodeId ? 'blue' : 'red');
+
+    const circlesUpdate = nodeUpdate.select('circle');
 
     // labels
     nodeEnter.append("text")
@@ -176,8 +174,11 @@ class App extends React.Component {
           })
     }
 
-    circles.on('click', (d) => {
-      this.selectNode(d.id);
+    circlesEnter.on('click', (d) => {
+      this.selectNode(d.id, simulation.nodes());
+    });
+    circlesUpdate.on('click', (d) => {
+      this.selectNode(d.id, simulation.nodes());
     });
   }
 
