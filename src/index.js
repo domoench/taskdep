@@ -15,42 +15,29 @@ class App extends React.Component {
     this.appRef = React.createRef();
     this.addNode = this.addNode.bind(this);
     this.removeNode = this.removeNode.bind(this);
-    this.addEdge = this.addEdge.bind(this);
+    this.addLink = this.addLink.bind(this);
     this.updateNodeText = this.updateNodeText.bind(this);
-    /*
     this.state = {
       nodes: [],
       links: [],
       selectedNodeId: '',
     }
-    */
-    this.state = {
-      nodes: [
-        {id: 'a', text: 'node a', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
-        {id: 'b', text: 'node b', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
-        {id: 'c', text: 'node c', val: 1, x: width/2, y: height/2, vx: 0, vy: 0},
-      ],
-      links: [
-        {source: 'c', target: 'b'},
-        {source: 'c', target: 'a'},
-      ],
-      selectedNodeId: 'a',
-    }
   }
 
   addNode(text) {
     const { nodes } = this.state;
-    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text, val: 1}]});
+    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text, val: 1}]}); // TODO: Why not clone d3 nodes here?
   }
 
-  addEdge(source, target) {
+  addLink(source, target) {
+    debugger;
     const { links } = this.state;
     this.setState({links: [...links.slice(), {source: source, target: target}]});
   }
 
   selectNode(id, d3Nodes) {
     this.setState({
-      nodes: cloneDeep(d3Nodes),
+      nodes: cloneDeep(d3Nodes), // TODO: Why did you decide you need to clone here? Cant remember
       selectedNodeId: id,
     });
   }
@@ -248,7 +235,7 @@ class App extends React.Component {
           nodes={nodes}
         />
         <NodeForm addNode={this.addNode} />
-        <EdgeForm nodes={nodes} links={links} addEdge={this.addEdge} />
+        <LinkForm key={nodes.length} nodes={nodes} links={links} addLink={this.addLink} />
       </div>
     );
   }
@@ -275,7 +262,7 @@ class NodeForm extends React.Component {
     return (
       <form onSubmit={this.handleSubmit}>
         <label>
-          Task:
+          New Task:
         <input type="text" value={this.state.value} onChange={this.handleChange} />
         </label>
         <input type="submit" value="Submit" />
@@ -284,12 +271,13 @@ class NodeForm extends React.Component {
   }
 }
 
-class EdgeForm extends React.Component {
+class LinkForm extends React.Component {
   constructor(props) {
     super(props);
+    const nodes = this.props.nodes;
     this.state = {
-      source: this.props.nodes[0].id,
-      target: this.props.nodes[0].id,
+      source: nodes.length ? nodes[0].id : '',
+      target: nodes.length ? nodes[0].id : '',
     };
     this.handleSourceChange = this.handleSourceChange.bind(this);
     this.handleTargetChange = this.handleTargetChange.bind(this);
@@ -305,15 +293,15 @@ class EdgeForm extends React.Component {
   }
 
   handleSubmit(event) {
+    this.props.addLink(this.state.source, this.state.target);
     event.preventDefault();
-    this.props.addEdge(this.state.source, this.state.target);
   }
 
   render() {
     return (
       <form onSubmit={this.handleSubmit}>
         <label>
-          Edge Source:
+          Link Source:
           <select value={this.state.source} onChange={this.handleSourceChange}>
             {
               this.props.nodes.map(node  => (
@@ -324,7 +312,7 @@ class EdgeForm extends React.Component {
         </label>
 
         <label>
-          Edge Target:
+          Link Target:
           <select value={this.state.target} onChange={this.handleTargetChange}>
             {
               this.props.nodes.map(node  => (
@@ -368,6 +356,9 @@ class NodeEditForm extends React.Component {
 
   getSelectedNodeText() {
     const idx = this.props.nodes.findIndex(e => e.id === this.props.selectedNodeId);
+    if (idx === -1) {
+      return '';
+    }
     return this.props.nodes[idx].text;
   }
 
