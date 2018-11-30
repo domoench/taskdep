@@ -4,7 +4,7 @@ import uuidv4 from 'uuid/v4';
 import './index.css';
 import { select } from 'd3-selection';
 import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, filter } from 'lodash';
 
 const width = 960;
 const height = 600;
@@ -14,6 +14,7 @@ class App extends React.Component {
     super(props);
     this.appRef = React.createRef();
     this.addNode = this.addNode.bind(this);
+    this.removeNode = this.removeNode.bind(this);
     this.addEdge = this.addEdge.bind(this);
     this.updateNodeText = this.updateNodeText.bind(this);
     /*
@@ -54,13 +55,20 @@ class App extends React.Component {
     });
   }
 
-  updateNodeText(id, text) {
+  // Returns the index of the node with the given Id
+  findNodeIdx(nodeId) {
     const { nodes } = this.state;
-    // Find the node that matches the id
-    const i = nodes.findIndex(e => e.id === id);
+    const i = nodes.findIndex(e => e.id === nodeId);
     if (i === -1) {
-      throw new Error(`node ${id} not found`);
+      // TODO: Learn idiomatic way of error handling in JS
+      throw new Error(`node ${nodeId} not found`);
     }
+    return i;
+  }
+
+  updateNodeText(nodeId, text) {
+    const { nodes } = this.state;
+    const i = this.findNodeIdx(nodeId);
     const node = nodes[i];
 
     // Update the text
@@ -68,16 +76,31 @@ class App extends React.Component {
     this.setState({nodes: cloneDeep([...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)])});
   }
 
+  removeNode(nodeId) {
+    const { nodes, links } = this.state;
+    const i = this.findNodeIdx(nodeId);
+
+    // Returns true if a link doesn't reference the nodeId
+    const linkDoesntRefNode = (l) => {
+      return l.target !== nodeId && l.source !== nodeId;
+    }
+
+    this.setState({
+      links: cloneDeep(filter(links, linkDoesntRefNode)),
+      nodes: cloneDeep([...nodes.slice(0, i), ...nodes.slice(i+1)]),
+    });
+  }
+
   // Many ideas learned from
   //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
   //   http://bl.ocks.org/rkirsling/5001347
   renderGraph() {
-    // Always pass clones of the nodes + links to d3 so it doesn't modify them
+    // Always pass clones of the nodes + links to d3 so it doesn't modify react state
     const nodes = cloneDeep(this.state.nodes);
     const links = cloneDeep(this.state.links);
 
     //const svg = select(this.appRef);
-    const svg = select('.graphviz'); // Why does this work and not the appRef selector?
+    const svg = select('.graphviz'); // TODO: Why does this work and not the appRef selector?
 
     // Custom downwards force
     const forceDown = alpha => {
@@ -113,7 +136,7 @@ class App extends React.Component {
     // Link data bind
     let link = svg.select('.links')
       .selectAll('line')
-      .data(links);
+      .data(links, (d) => d.source + '-' + d.target);
 
     // Link exit
     link.exit().remove();
@@ -127,7 +150,7 @@ class App extends React.Component {
     // NODES
     // TODO: Update organization to be idiomatic according to general update pattern: https://bl.ocks.org/mbostock/3808218
     // Node Update
-    const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes);
+    const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes, (d) => d.id);
     nodeUpdate.select('text')
         .text(d => d.text);
     nodeUpdate.select('circle').attr('fill', d => d.id === this.state.selectedNodeId ? 'blue' : 'red');
@@ -160,7 +183,8 @@ class App extends React.Component {
         .distance(100);
 
     // Must restart to re-energize old nodes when new ones are added via user interaction: https://github.com/d3/d3-force#simulation_restart
-    // Setting alphaTarget is essential to ensure links stay synced to nodes, but I don't know why
+    // Setting alphaTarget is essential to ensure links stay synced to nodes.
+    // TODO// Figure out why you need to set alphaTartget, and how to make the simulation come to a stop
     simulation.alphaTarget(0.001).restart();
 
     // Updates the line end and circle render positions to their new positions
@@ -219,6 +243,7 @@ class App extends React.Component {
         <NodeEditForm
           key={selectedNodeId} // Need key so selecting new node re-renders NodeEditForm
           updateNodeText={this.updateNodeText}
+          removeNode={this.removeNode}
           selectedNodeId={selectedNodeId}
           nodes={nodes}
         />
@@ -324,6 +349,7 @@ class NodeEditForm extends React.Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleDelete = this.handleDelete.bind(this);
   }
 
   handleChange(event) {
@@ -331,8 +357,13 @@ class NodeEditForm extends React.Component {
   }
 
   handleSubmit(event) {
-    event.preventDefault();
     this.props.updateNodeText(this.props.selectedNodeId, this.state.value);
+    event.preventDefault();
+  }
+
+  handleDelete(event) {
+    this.props.removeNode(this.props.selectedNodeId);
+    event.preventDefault();
   }
 
   getSelectedNodeText() {
@@ -347,7 +378,8 @@ class NodeEditForm extends React.Component {
           Edit Node:
         <input type="text" value={this.state.value} onChange={this.handleChange} />
         </label>
-        <input type="submit" value="Submit" />
+        <input type="submit" value="Save" />
+        <button onClick={this.handleDelete}>Delete</button>
       </form>
     );
   }
