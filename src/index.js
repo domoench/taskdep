@@ -20,25 +20,32 @@ class App extends React.Component {
     this.state = {
       nodes: [],
       links: [],
-      selectedNodeId: '',
+      selected: {nodeId: '', linkId: ''}, // can be nothing, a node, or a link
     }
   }
 
   addNode(text) {
     const { nodes } = this.state;
-    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text, val: 1}]}); // TODO: Why not clone d3 nodes here?
+    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text, val: 1}]});
   }
 
   addLink(source, target) {
-    debugger;
     const { links } = this.state;
     this.setState({links: [...links.slice(), {source: source, target: target}]});
   }
 
-  selectNode(id, d3Nodes) {
+  selectNode(nodeId, d3Nodes) {
     this.setState({
-      nodes: cloneDeep(d3Nodes), // TODO: Why did you decide you need to clone here? Cant remember
-      selectedNodeId: id,
+      nodes: cloneDeep(d3Nodes), // Persist x,y,vx,vy info so graph doesn't jump
+      selected: {nodeId: nodeId, linkId: ''},
+    });
+  }
+
+  selectLink(linkId, d3Nodes) {
+    console.log('selectLink()');
+    this.setState({
+      nodes: cloneDeep(d3Nodes), // Persist x,y,vx,vy info so graph doesn't jump
+      selected: {nodeId: '', linkId: linkId},
     });
   }
 
@@ -78,10 +85,17 @@ class App extends React.Component {
     });
   }
 
-  // Many ideas learned from
-  //   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
-  //   http://bl.ocks.org/rkirsling/5001347
+  /* Many ideas learned from
+   *   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
+   *   http://bl.ocks.org/rkirsling/5001347
+   *
+   * TODO Document somewhere
+   * - differences between react-maintained and d3 maintained nodes/links. e.g. in react
+   *   links refer to node IDs, while in d3 links refer to node objects.
+   */
   renderGraph() {
+    const { selected } = this.state;
+    console.log('renderGraph(). selected: ', selected);
     // Always pass clones of the nodes + links to d3 so it doesn't modify react state
     const nodes = cloneDeep(this.state.nodes);
     const links = cloneDeep(this.state.links);
@@ -130,9 +144,17 @@ class App extends React.Component {
 
     // Link enter + update
     link = link.enter().append('line')
-      .merge(link)
-        .attr('stroke-width', d => 2)
-        .attr('marker-end', 'url(#arrow)');
+      .attr('marker-end', 'url(#arrow)')
+      .classed('selected', d => {
+        debugger;
+        return `${d.source}-${d.target}` === selected.linkId;
+      })
+      .on('click', (d) => {
+        const linkId = `${d.source.id}-${d.target.id}`;
+        console.log('linkId: ', linkId);
+        this.selectLink(linkId, simulation.nodes())
+      })
+      .merge(link);
 
     // NODES
     // TODO: Update organization to be idiomatic according to general update pattern: https://bl.ocks.org/mbostock/3808218
@@ -140,14 +162,14 @@ class App extends React.Component {
     const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes, (d) => d.id);
     nodeUpdate.select('text')
         .text(d => d.text);
-    nodeUpdate.select('circle').attr('fill', d => d.id === this.state.selectedNodeId ? 'blue' : 'red');
+    nodeUpdate.select('circle').attr('fill', d => d.id === selected.nodeId ? 'blue' : 'red');
 
     // Node Enter
     // circles
     const nodeEnter = nodeUpdate.enter().append('g');
     const circlesEnter = nodeEnter.append('circle')
       .attr('r', 10)
-      .attr('fill', d => d.id === this.state.selectedNodeId ? 'blue' : 'red');
+      .attr('fill', d => d.id === selected.nodeId ? 'blue' : 'red');
 
     const circlesUpdate = nodeUpdate.select('circle');
 
@@ -189,6 +211,7 @@ class App extends React.Component {
           })
     }
 
+    // TODO: Can't you use merge to avoid repetition here?
     circlesEnter.on('click', (d) => {
       this.selectNode(d.id, simulation.nodes());
     });
@@ -206,8 +229,8 @@ class App extends React.Component {
         .attr('viewBox', '0 0 10 10')
         .attr('refX', 18)
         .attr('refY', 5)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
+        .attr('markerWidth', 4)
+        .attr('markerHeight', 3)
         .attr('orient', 'auto')
       .append('svg:path')
         .attr('d', 'M 0 0 L 10 5 L 0 10 z');
@@ -223,15 +246,15 @@ class App extends React.Component {
   }
 
   render() {
-    const { nodes, links, selectedNodeId } = this.state;
+    const { nodes, links, selected } = this.state;
     return (
       <div>
         <svg width={width} height={height} className="graphviz" ref={this.appRef} />
         <NodeEditForm
-          key={selectedNodeId} // Need key so selecting new node re-renders NodeEditForm
+          key={selected.nodeId} // Need key so selecting new node re-renders NodeEditForm
           updateNodeText={this.updateNodeText}
           removeNode={this.removeNode}
-          selectedNodeId={selectedNodeId}
+          selected={selected}
           nodes={nodes}
         />
         <NodeForm addNode={this.addNode} />
@@ -345,17 +368,17 @@ class NodeEditForm extends React.Component {
   }
 
   handleSubmit(event) {
-    this.props.updateNodeText(this.props.selectedNodeId, this.state.value);
+    this.props.updateNodeText(this.props.selected.nodeId, this.state.value);
     event.preventDefault();
   }
 
   handleDelete(event) {
-    this.props.removeNode(this.props.selectedNodeId);
+    this.props.removeNode(this.props.selected.nodeId);
     event.preventDefault();
   }
 
   getSelectedNodeText() {
-    const idx = this.props.nodes.findIndex(e => e.id === this.props.selectedNodeId);
+    const idx = this.props.nodes.findIndex(e => e.id === this.props.selected.nodeId);
     if (idx === -1) {
       return '';
     }
