@@ -14,8 +14,9 @@ body {
 }
 
 .links line.selected {
-  stroke-opacity: 0.9;
+  stroke-opacity: 1.0;
 	stroke-dasharray: 10,2;
+  stroke-width: 5px;
 }
 
 marker#arrow path {

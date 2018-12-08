@@ -1,6 +1,6 @@
 import React from 'react';
 import uuidv4 from 'uuid/v4';
-import './App.css';
+import './app.css';
 import EditForm from './editForm.js'
 import NodeForm from './nodeForm.js'
 import LinkForm from './linkForm.js'
@@ -17,6 +17,8 @@ export default class App extends React.Component {
     this.appRef = React.createRef();
     this.addNode = this.addNode.bind(this);
     this.removeNode = this.removeNode.bind(this);
+    this.removeLink = this.removeLink.bind(this);
+    this.deselect = this.deselect.bind(this);
     this.addLink = this.addLink.bind(this);
     this.updateNodeText = this.updateNodeText.bind(this);
     this.state = {
@@ -87,6 +89,25 @@ export default class App extends React.Component {
     });
   }
 
+  // TODO: How does removing links preserve positions but selecting nodes does the upward bump
+  removeLink(linkId) {
+    const { selected, links } = this.state;
+    const ends = selected.linkId.split('|');
+    const i = links.findIndex(d => d.source === ends[0] && d.target === ends[1]);
+    if (i === -1) {
+      // TODO: Learn idiomatic way of error handling in JS
+      throw new Error(`link ${linkId} not found`);
+    }
+
+    this.setState({
+      links: cloneDeep([...links.slice(0, i), ...links.slice(i+1)]),
+    });
+  }
+
+  deselect() {
+    this.setState({selected: {nodeId: '', linkId: ''}})
+  }
+
   /* Many ideas learned from
    *   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
    *   http://bl.ocks.org/rkirsling/5001347
@@ -139,7 +160,7 @@ export default class App extends React.Component {
     // Link data bind
     let link = svg.select('.links')
       .selectAll('line')
-      .data(links, (d) => d.source + '-' + d.target);
+      .data(links, (d) => d.source + '|' + d.target);
 
     // Link exit
     link.exit().remove();
@@ -148,11 +169,10 @@ export default class App extends React.Component {
     link = link.enter().append('line')
       .attr('marker-end', 'url(#arrow)')
       .classed('selected', d => {
-        debugger;
-        return `${d.source}-${d.target}` === selected.linkId;
+        return `${d.source}|${d.target}` === selected.linkId;
       })
       .on('click', (d) => {
-        const linkId = `${d.source.id}-${d.target.id}`;
+        const linkId = `${d.source.id}|${d.target.id}`; // TODO why does d reference node objects here
         console.log('linkId: ', linkId);
         this.selectLink(linkId, simulation.nodes())
       })
@@ -256,6 +276,8 @@ export default class App extends React.Component {
           key={selected.nodeId} // Need key so selecting new node re-renders EditForm
           updateNodeText={this.updateNodeText}
           removeNode={this.removeNode}
+          removeLink={this.removeLink}
+          deselect={this.deselect}
           selected={selected}
           nodes={nodes}
         />

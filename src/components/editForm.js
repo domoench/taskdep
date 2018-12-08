@@ -1,49 +1,22 @@
 import React from 'react';
+import EditNode from './editNode.js'
+import EditLink from './editLink.js'
 
-export default class EditForm extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      value: this.getSelectedNodeText()
-    };
-
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleDelete = this.handleDelete.bind(this);
-  }
-
-  handleChange(event) {
-    this.setState({value: event.target.value});
-  }
-
-  handleSubmit(event) {
-    this.props.updateNodeText(this.props.selected.nodeId, this.state.value);
-    event.preventDefault();
-  }
-
-  handleDelete(event) {
-    this.props.removeNode(this.props.selected.nodeId);
-    event.preventDefault();
-  }
-
-  getSelectedNodeText() {
-    const idx = this.props.nodes.findIndex(e => e.id === this.props.selected.nodeId);
-    if (idx === -1) {
-      return '';
-    }
-    return this.props.nodes[idx].text;
-  }
-
-  render() {
-    return (
-      <form onSubmit={this.handleSubmit}>
-        <label>
-          Edit Node:
-        <input type="text" value={this.state.value} onChange={this.handleChange} />
-        </label>
-        <input type="submit" value="Save" />
-        <button onClick={this.handleDelete}>Delete</button>
-      </form>
-    );
-  }
+const EditForm = (props) => {
+  const { selected } = props;
+  const nodeIsSelected = selected.nodeId !== '';
+  const linkIsSelected = selected.linkId !== '';
+  return (
+    <div className='editform'>
+      {nodeIsSelected &&
+        <EditNode {...props} />
+      }
+      {linkIsSelected &&
+        <EditLink {...props} />
+      }
+    </div>
+  )
 }
+
+export default EditForm;
+
