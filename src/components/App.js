@@ -117,8 +117,8 @@ export default class App extends React.Component {
    *   links refer to node IDs, while in d3 links refer to node objects.
    */
   renderGraph() {
+    console.log('renderGraph(). state: ', this.state);
     const { selected } = this.state;
-    console.log('renderGraph(). selected: ', selected);
     // Always pass clones of the nodes + links to d3 so it doesn't modify react state
     const nodes = cloneDeep(this.state.nodes);
     const links = cloneDeep(this.state.links);
@@ -165,44 +165,52 @@ export default class App extends React.Component {
     // Link exit
     link.exit().remove();
 
+    // Link enter
+    const linkEnter = link.enter().append('line');
+
     // Link enter + update
-    link = link.enter().append('line')
+    link = linkEnter.merge(link)
       .attr('marker-end', 'url(#arrow)')
       .classed('selected', d => {
         return `${d.source}|${d.target}` === selected.linkId;
       })
       .on('click', (d) => {
         const linkId = `${d.source.id}|${d.target.id}`; // TODO why does d reference node objects here
-        console.log('linkId: ', linkId);
         this.selectLink(linkId, simulation.nodes())
-      })
-      .merge(link);
+      });
 
-    // NODES
-    // TODO: Update organization to be idiomatic according to general update pattern: https://bl.ocks.org/mbostock/3808218
-    // Node Update
-    const nodeUpdate = svg.select('.nodes').selectAll('g').data(nodes, (d) => d.id);
-    nodeUpdate.select('text')
-        .text(d => d.text);
-    nodeUpdate.select('circle').attr('fill', d => d.id === selected.nodeId ? 'blue' : 'red');
+    // NODES: Each node has an svg group containing a circle + a text label
+    // Node group data bind
+    let node = svg.select('.nodes').selectAll('g').data(nodes, (d) => d.id);
 
-    // Node Enter
-    // circles
-    const nodeEnter = nodeUpdate.enter().append('g');
-    const circlesEnter = nodeEnter.append('circle')
-      .attr('r', 10)
-      .attr('fill', d => d.id === selected.nodeId ? 'blue' : 'red');
+    // Node group exit
+    node.exit().remove();
 
-    const circlesUpdate = nodeUpdate.select('circle');
+    // Node group enter
+    const nodeEnter = node.enter().append('g');
 
-    // labels
-    nodeEnter.append("text")
-      .text(d => d.text)
-      .attr('x', 6)
-      .attr('y', 3);
+    // Circle enter
+    nodeEnter.append('circle');
 
-    // Node remove
-    nodeUpdate.exit().remove();
+    // Label enter
+    nodeEnter.append('text');
+
+    // Enter + update on node group
+    node = nodeEnter.merge(node);
+
+    // Circle enter + update on circles
+    node.select('circle')
+        .attr('r', 10)
+        .attr('fill', d => d.id === selected.nodeId ? 'blue' : 'red')
+        .on('click', (d) => {
+          this.selectNode(d.id, simulation.nodes())
+        });
+
+    // Label enter + update
+    node.select('text')
+        .text(d => d.text)
+        .attr('x', 6)
+        .attr('y', 3);
 
     // Bind data to simulation
     simulation
@@ -227,19 +235,21 @@ export default class App extends React.Component {
           .attr('x2', function(d) { return d.target.x; })
           .attr('y2', function(d) { return d.target.y; });
 
-      nodeEnter
+      node
           .attr('transform', function(d) {
             return 'translate(' + d.x + ',' + d.y + ')';
           })
     }
 
     // TODO: Can't you use merge to avoid repetition here?
+    /*
     circlesEnter.on('click', (d) => {
       this.selectNode(d.id, simulation.nodes());
     });
     circlesUpdate.on('click', (d) => {
       this.selectNode(d.id, simulation.nodes());
     });
+    */
   }
 
   componentDidMount() {
