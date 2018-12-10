@@ -1,9 +1,10 @@
 import React from 'react';
 import uuidv4 from 'uuid/v4';
 import './app.css';
-import EditForm from './editForm.js'
-import NodeForm from './nodeForm.js'
-import LinkForm from './linkForm.js'
+import EditForm from './editForm.js';
+import NodeForm from './nodeForm.js';
+import LinkForm from './linkForm.js';
+import nodeWeights from '../graph.js';
 import { select } from 'd3-selection';
 import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force';
 import { cloneDeep, filter } from 'lodash';
@@ -30,7 +31,7 @@ export default class App extends React.Component {
 
   addNode(text) {
     const { nodes } = this.state;
-    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text, val: 1}]});
+    this.setState({nodes: [...nodes.slice(), {id: uuidv4(), text: text}]});
   }
 
   addLink(source, target) {
@@ -70,7 +71,7 @@ export default class App extends React.Component {
     const node = nodes[i];
 
     // Update the text
-    const updatedNode = {id: node.id, text: text, val: 1, x: node.x, y: node.y, vx: node.vx, vy: node.vy};
+    const updatedNode = {id: node.id, text: text, x: node.x, y: node.y, vx: node.vx, vy: node.vy};
     this.setState({nodes: cloneDeep([...nodes.slice(0, i), updatedNode, ...nodes.slice(i+1)])});
   }
 
@@ -117,11 +118,16 @@ export default class App extends React.Component {
    *   links refer to node IDs, while in d3 links refer to node objects.
    */
   renderGraph() {
-    console.log('renderGraph(). state: ', this.state);
     const { selected } = this.state;
     // Always pass clones of the nodes + links to d3 so it doesn't modify react state
     const nodes = cloneDeep(this.state.nodes);
     const links = cloneDeep(this.state.links);
+
+    // Calculate node weights
+    const weights = nodeWeights(nodes, links);
+    for (let i = 0; i < nodes.length; i++) {
+      nodes[i].weight = weights[i];
+    }
 
     //const svg = select(this.appRef);
     const svg = select('.graphviz'); // TODO: Why does this work and not the appRef selector?
@@ -137,13 +143,13 @@ export default class App extends React.Component {
     }
 
     // Custom upwards force
-    // Equal to downwards force if nodes have same value, but stronger
-    // for higher values, so higher value nodes rise to the top.
+    // Equal to downwards force if nodes have same weight, but stronger
+    // for higher weights, so higher weight nodes rise to the top.
     const forceUp = alpha => {
       for (let i = 0; i < nodes.length; ++i) {
         const k = alpha * 0.1;
         const node = nodes[i];
-        const v = node.val;
+        const v = node.weight;
         const dyT = node.y // Dist from top
         node.vy -= (dyT * k) + (v * 0.03);
       }
@@ -151,7 +157,7 @@ export default class App extends React.Component {
 
     const simulation = forceSimulation()
         .force('link', forceLink().id(function(d) { return d.id; }))
-        .force('charge', forceManyBody().strength(-100))
+        .force('charge', forceManyBody().strength(-50))
         .force('center', forceCenter(width / 2, height / 2))
         .force('up', forceUp)
         .force('down', forceDown);
