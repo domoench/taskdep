@@ -4,6 +4,7 @@ import './app.css';
 import EditForm from './editForm.js';
 import NodeForm from './nodeForm.js';
 import LinkForm from './linkForm.js';
+import DownloadButton from './downloadButton.js';
 import nodeWeights from '../graph.js';
 import { select, event } from 'd3-selection';
 import { zoom } from 'd3-zoom';
@@ -288,6 +289,7 @@ export default class App extends React.Component {
         />
         <NodeForm addNode={this.addNode} />
         <LinkForm key={nodes.length} nodes={nodes} links={links} addLink={this.addLink} />
+        <DownloadButton {...this.state} />
       </div>
     );
   }
