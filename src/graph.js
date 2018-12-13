@@ -1,3 +1,5 @@
+import { min, max, map} from 'lodash';
+
 // Returns and adjacency map representation of a DAG (each map entry key is
 // a node id, val is list of adjacent (target) nodes).
 function newAdjMap(nodes, edges) {
@@ -39,10 +41,20 @@ export default function nodeWeights(nodes, edges) {
   }
 
   // Calculate weight of each node
-  const weights = new Array(nodes.length);
+  let weights = new Array(nodes.length);
   for (let i = 0; i < nodes.length; ++i) {
     weights[i] = nodeWeight(nodes[i].id, adjMap, visited);
   }
 
+  // Normalize weights into the range [0, 1]
+  const inMin = min(weights);
+  const inMax = max(weights);
+  const inRange = inMax - inMin;
+  weights = map(weights, w => {
+    if (inRange === 0) { return 0; }
+    return (w - inMin) / inRange;
+  });
+
+  // TODO: Update tests
   return weights;
 }

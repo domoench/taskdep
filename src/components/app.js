@@ -47,7 +47,6 @@ export default class App extends React.Component {
   }
 
   selectLink(linkId, d3Nodes) {
-    console.log('selectLink()');
     this.setState({
       nodes: cloneDeep(d3Nodes), // Persist x,y,vx,vy info so graph doesn't jump
       selected: {nodeId: '', linkId: linkId},
@@ -90,7 +89,6 @@ export default class App extends React.Component {
     });
   }
 
-  // TODO: How does removing links preserve positions but selecting nodes does the upward bump
   removeLink(linkId) {
     const { selected, links } = this.state;
     const ends = selected.linkId.split('|');
@@ -132,35 +130,36 @@ export default class App extends React.Component {
     //const svg = select(this.appRef);
     const svg = select('.graphviz'); // TODO: Why does this work and not the appRef selector?
 
-    // Custom downwards force
-    const forceDown = alpha => {
+    // Custom y-axis layout force based on weight to serve as a basic topological sort
+    // Uses node weight to target a y position so heavier nodes (those with more dependencies
+    // downstream) rise to the top.
+    const weightLayout = alpha => {
       for (let i = 0; i < nodes.length; ++i) {
-        const k = alpha * 0.1;
+        const k = alpha * 0.05;
         const node = nodes[i];
-        const dyB = height - node.y; // Dist from bottom
-        node.vy -= dyB * k;
-      }
-    }
 
-    // Custom upwards force
-    // Equal to downwards force if nodes have same weight, but stronger
-    // for higher weights, so higher weight nodes rise to the top.
-    const forceUp = alpha => {
-      for (let i = 0; i < nodes.length; ++i) {
-        const k = alpha * 0.1;
-        const node = nodes[i];
-        const v = node.weight;
-        const dyT = node.y // Dist from top
-        node.vy -= (dyT * k) + (v * 0.03);
+        // Weight is assumed in range [0,1]. Invert because we want heavy nodes at top.
+        const w = 1 - node.weight;
+
+        // y position target based on weight.
+        // Map weight range to screen height range (with some padding)
+        const pad = 0.05
+        const yMin = height * pad;
+        const yMax = height * (1 - pad);
+        const yRange = yMax - yMin
+        const yTarget = (w * yRange) + yMin;
+
+        // Speed towards target position proportional to distance from target
+        const dY = yTarget - node.y;
+        node.vy += dY * k;
       }
     }
 
     const simulation = forceSimulation()
-        .force('link', forceLink().id(function(d) { return d.id; }))
-        .force('charge', forceManyBody().strength(-50))
+        .force('link', forceLink().id(function(d) { return d.id; }).strength(0.99).distance(1))
+        .force('charge', forceManyBody().strength(-150))
         .force('center', forceCenter(width / 2, height / 2))
-        .force('up', forceUp)
-        .force('down', forceDown);
+        .force('updown', weightLayout);
 
     // LINKS
     // Link data bind
@@ -227,11 +226,6 @@ export default class App extends React.Component {
         .links(links)
         .distance(100);
 
-    // Must restart to re-energize old nodes when new ones are added via user interaction: https://github.com/d3/d3-force#simulation_restart
-    // Setting alphaTarget is essential to ensure links stay synced to nodes.
-    // TODO// Figure out why you need to set alphaTartget, and how to make the simulation come to a stop
-    simulation.alphaTarget(0.001).restart();
-
     // Updates the line end and circle render positions to their new positions
     // resulting from this tick of force calculations
     function ticked() {
@@ -246,16 +240,6 @@ export default class App extends React.Component {
             return 'translate(' + d.x + ',' + d.y + ')';
           })
     }
-
-    // TODO: Can't you use merge to avoid repetition here?
-    /*
-    circlesEnter.on('click', (d) => {
-      this.selectNode(d.id, simulation.nodes());
-    });
-    circlesUpdate.on('click', (d) => {
-      this.selectNode(d.id, simulation.nodes());
-    });
-    */
   }
 
   componentDidMount() {
