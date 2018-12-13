@@ -55,6 +55,5 @@ export default function nodeWeights(nodes, edges) {
     return (w - inMin) / inRange;
   });
 
-  // TODO: Update tests
   return weights;
 }

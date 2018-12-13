@@ -30,7 +30,6 @@ test('DAG', () => {
     {source: 'c', target: 'e'},
     {source: 'e', target: 'f'},
   ];
-  //const expectedWeights = [7, 2, 4, 1, 2, 1]
   const min = 1;
   const max = 7;
   const range = max - min;
