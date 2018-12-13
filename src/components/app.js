@@ -5,6 +5,7 @@ import EditForm from './editForm.js';
 import NodeForm from './nodeForm.js';
 import LinkForm from './linkForm.js';
 import DownloadButton from './downloadButton.js';
+import UploadButton from './uploadButton.js';
 import nodeWeights from '../graph.js';
 import { select, event } from 'd3-selection';
 import { zoom } from 'd3-zoom';
@@ -23,6 +24,7 @@ export default class App extends React.Component {
     this.removeLink = this.removeLink.bind(this);
     this.deselect = this.deselect.bind(this);
     this.addLink = this.addLink.bind(this);
+    this.loadGraphState = this.loadGraphState.bind(this);
     this.updateNodeText = this.updateNodeText.bind(this);
     this.state = {
       nodes: [],
@@ -53,6 +55,11 @@ export default class App extends React.Component {
       nodes: cloneDeep(d3Nodes), // Persist x,y,vx,vy info so graph doesn't jump
       selected: {nodeId: '', linkId: linkId},
     });
+  }
+
+  loadGraphState(nodes, links) {
+    this.deselect();
+    this.setState({nodes: nodes, links: links});
   }
 
   // Returns the index of the node with the given Id
@@ -290,6 +297,7 @@ export default class App extends React.Component {
         <NodeForm addNode={this.addNode} />
         <LinkForm key={nodes.length} nodes={nodes} links={links} addLink={this.addLink} />
         <DownloadButton {...this.state} />
+        <UploadButton loadGraphState={this.loadGraphState} />
       </div>
     );
   }
