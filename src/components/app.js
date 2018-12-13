@@ -5,7 +5,8 @@ import EditForm from './editForm.js';
 import NodeForm from './nodeForm.js';
 import LinkForm from './linkForm.js';
 import nodeWeights from '../graph.js';
-import { select } from 'd3-selection';
+import { select, event } from 'd3-selection';
+import { zoom } from 'd3-zoom';
 import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force';
 import { cloneDeep, filter } from 'lodash';
 
@@ -127,8 +128,12 @@ export default class App extends React.Component {
       nodes[i].weight = weights[i];
     }
 
-    //const svg = select(this.appRef);
-    const svg = select('.graphviz'); // TODO: Why does this work and not the appRef selector?
+    // Set up zoom + pan
+    const svg = select('.graphviz');
+    const g = svg.select('g');
+    svg.call(zoom().on("zoom", function () {
+      g.attr("transform", event.transform)
+    }))
 
     // Custom y-axis layout force based on weight to serve as a basic topological sort
     // Uses node weight to target a y position so heavier nodes (those with more dependencies
@@ -163,7 +168,7 @@ export default class App extends React.Component {
 
     // LINKS
     // Link data bind
-    let link = svg.select('.links')
+    let link = g.select('.links')
       .selectAll('line')
       .data(links, (d) => d.source + '|' + d.target);
 
@@ -186,7 +191,7 @@ export default class App extends React.Component {
 
     // NODES: Each node has an svg group containing a circle + a text label
     // Node group data bind
-    let node = svg.select('.nodes').selectAll('g').data(nodes, (d) => d.id);
+    let node = g.select('.nodes').selectAll('g').data(nodes, (d) => d.id);
 
     // Node group exit
     node.exit().remove();
@@ -244,9 +249,9 @@ export default class App extends React.Component {
 
   componentDidMount() {
     // Perform d3 setup that only needs to happen once
-    const svg = select('.graphviz'); // Why does this work and not the appRef selector?
+    const g = select('.graphviz').append('g');
     // Arrow marker def
-    svg.append('svg:defs').append('svg:marker')
+    g.append('svg:defs').append('svg:marker')
         .attr('id', 'arrow')
         .attr('viewBox', '0 0 10 10')
         .attr('refX', 18)
@@ -257,8 +262,8 @@ export default class App extends React.Component {
       .append('svg:path')
         .attr('d', 'M 0 0 L 10 5 L 0 10 z');
 
-    svg.append('g').attr('class', 'links');
-    svg.append('g').attr('class', 'nodes');
+    g.append('g').attr('class', 'links');
+    g.append('g').attr('class', 'nodes');
 
     this.renderGraph();
   }
