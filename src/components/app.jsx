@@ -198,7 +198,7 @@ export default class App extends React.Component {
 
     const simulation = forceSimulation()
       .force('link', forceLink().id(d => d.id).strength(0.99).distance(1))
-      .force('charge', forceManyBody().strength(-150))
+      .force('charge', forceManyBody().strength(-100))
       .force('center', forceCenter(width / 2, height / 2))
       .force('updown', weightLayout);
 
