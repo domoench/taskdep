@@ -1,9 +1,11 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+import { nodesShape } from '../props';
 
-export default class LinkForm extends React.Component {
+class LinkForm extends React.Component {
   constructor(props) {
     super(props);
-    const nodes = this.props.nodes;
+    const { nodes } = this.props;
     this.state = {
       source: nodes.length ? nodes[0].id : '',
       target: nodes.length ? nodes[0].id : '',
@@ -14,37 +16,41 @@ export default class LinkForm extends React.Component {
   }
 
   handleSourceChange(event) {
-    this.setState({source: event.target.value});
+    this.setState({ source: event.target.value });
   }
 
   handleTargetChange(event) {
-    this.setState({target: event.target.value});
+    this.setState({ target: event.target.value });
   }
 
   handleSubmit(event) {
-    this.props.addLink(this.state.source, this.state.target);
+    const { source, target } = this.state;
+    const { addLink } = this.props;
+    addLink(source, target);
     event.preventDefault();
   }
 
   render() {
+    const { nodes } = this.props;
+    const { source, target } = this.state;
     return (
       <form onSubmit={this.handleSubmit}>
-        <label>
+        <label htmlFor="linkSource">
           Link Source:
-          <select value={this.state.source} onChange={this.handleSourceChange}>
+          <select value={source} id="linkSource" onChange={this.handleSourceChange}>
             {
-              this.props.nodes.map(node  => (
+              nodes.map(node => (
                 <option key={node.id} value={node.id}>{node.text}</option>
               ))
             }
           </select>
         </label>
 
-        <label>
+        <label htmlFor="linkTarget">
           Link Target:
-          <select value={this.state.target} onChange={this.handleTargetChange}>
+          <select value={target} id="linkTarget" onChange={this.handleTargetChange}>
             {
-              this.props.nodes.map(node  => (
+              nodes.map(node => (
                 <option key={node.id} value={node.id}>{node.text}</option>
               ))
             }
@@ -57,3 +63,9 @@ export default class LinkForm extends React.Component {
   }
 }
 
+LinkForm.propTypes = {
+  nodes: nodesShape.isRequired,
+  addLink: PropTypes.func.isRequired,
+};
+
+export default LinkForm;

@@ -1,16 +1,17 @@
-import { min, max, map} from 'lodash';
+import { min, max, map } from 'lodash';
 
 // Returns and adjacency map representation of a DAG (each map entry key is
 // a node id, val is list of adjacent (target) nodes).
 function newAdjMap(nodes, edges) {
   const a = {};
   // Create a hashmap, with an entry for each node
-  for (let node of nodes) {
-    a[node.id] = [];
+  for (let i = 0; i < nodes.length; i += 1) {
+    a[nodes[i].id] = [];
   }
 
   // Walk through edges populating the adjacency list
-  for (let edge of edges) {
+  for (let i = 0; i < edges.length; i += 1) {
+    const edge = edges[i];
     a[edge.source].push(edge.target);
   }
 
@@ -23,8 +24,8 @@ function nodeWeight(nodeId, adjMap, visited) {
   let weight = 1;
   if (!visited[nodeId]) {
     const adjacents = adjMap[nodeId];
-    for (let adjNodeId of adjacents) {
-      weight += nodeWeight(adjNodeId, adjMap, visited);
+    for (let i = 0; i < adjacents.length; i += 1) {
+      weight += nodeWeight(adjacents[i], adjMap, visited);
     }
   }
   return weight;
@@ -35,14 +36,14 @@ export default function nodeWeights(nodes, edges) {
   const adjMap = newAdjMap(nodes, edges);
 
   // Track which nodes have been visited
-  const visited = {}
-  for (let node of nodes) {
-    visited[node.id] = false;
+  const visited = {};
+  for (let i = 0; i < nodes.length; i += 1) {
+    visited[nodes[i].id] = false;
   }
 
   // Calculate weight of each node
   let weights = new Array(nodes.length);
-  for (let i = 0; i < nodes.length; ++i) {
+  for (let i = 0; i < nodes.length; i += 1) {
     weights[i] = nodeWeight(nodes[i].id, adjMap, visited);
   }
 
@@ -50,7 +51,7 @@ export default function nodeWeights(nodes, edges) {
   const inMin = min(weights);
   const inMax = max(weights);
   const inRange = inMax - inMin;
-  weights = map(weights, w => {
+  weights = map(weights, (w) => {
     if (inRange === 0) { return 0; }
     return (w - inMin) / inRange;
   });

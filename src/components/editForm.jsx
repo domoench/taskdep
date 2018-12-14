@@ -1,22 +1,21 @@
 import React from 'react';
-import EditNode from './editNode.js'
-import EditLink from './editLink.js'
+import EditNode from './editNode';
+import EditLink from './editLink';
 
 const EditForm = (props) => {
   const { selected } = props;
   const nodeIsSelected = selected.nodeId !== '';
   const linkIsSelected = selected.linkId !== '';
   return (
-    <div className='editform'>
-      {nodeIsSelected &&
-        <EditNode {...props} />
+    <div className="editform">
+      {nodeIsSelected
+        && <EditNode {...props} />
       }
-      {linkIsSelected &&
-        <EditLink {...props} />
+      {linkIsSelected
+        && <EditLink {...props} />
       }
     </div>
-  )
-}
+  );
+};
 
 export default EditForm;
-
