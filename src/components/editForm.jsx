@@ -6,16 +6,22 @@ const EditForm = (props) => {
   const { selected } = props;
   const nodeIsSelected = selected.nodeId !== '';
   const linkIsSelected = selected.linkId !== '';
-  return (
-    <div className="editform">
-      {nodeIsSelected
-        && <EditNode {...props} />
-      }
-      {linkIsSelected
-        && <EditLink {...props} />
-      }
-    </div>
-  );
+  if(!nodeIsSelected && !linkIsSelected) {
+    return null;
+  } else {
+    return (
+      <div className="col-6">
+        <div className="editform control">
+          {nodeIsSelected
+            && <EditNode {...props} />
+          }
+          {linkIsSelected
+            && <EditLink {...props} />
+          }
+        </div>
+      </div>
+    );
+  }
 };
 
 export default EditForm;

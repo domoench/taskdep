@@ -8,8 +8,7 @@ import {
 } from 'd3-force';
 import { cloneDeep, filter } from 'lodash';
 import EditForm from './editForm';
-import NodeForm from './nodeForm';
-import LinkForm from './linkForm';
+import AddForm from './addForm';
 import DownloadButton from './downloadButton';
 import UploadButton from './uploadButton';
 import nodeWeights from '../graph';
@@ -282,21 +281,31 @@ export default class App extends React.Component {
   render() {
     const { nodes, links, selected } = this.state;
     return (
-      <div>
+      <div className="container">
         <svg width={width} height={height} className="graphviz" ref={this.appRef} />
-        <EditForm
-          key={selected.nodeId} // Need key so selecting new node re-renders EditForm
-          updateNodeText={this.updateNodeText}
-          removeNode={this.removeNode}
-          removeLink={this.removeLink}
-          deselect={this.deselect}
-          selected={selected}
-          nodes={nodes}
-        />
-        <NodeForm addNode={this.addNode} />
-        <LinkForm key={nodes.length} nodes={nodes} links={links} addLink={this.addLink} />
-        <DownloadButton {...this.state} />
-        <UploadButton loadGraphState={this.loadGraphState} />
+        <div className="controls">
+          <div className="row">
+            <AddForm
+              nodes={nodes}
+              links={links}
+              addNode={this.addNode}
+              addLink={this.addLink}
+            />
+            <EditForm
+              key={selected.nodeId} // Need key so selecting new node re-renders EditForm
+              updateNodeText={this.updateNodeText}
+              removeNode={this.removeNode}
+              removeLink={this.removeLink}
+              deselect={this.deselect}
+              selected={selected}
+              nodes={nodes}
+            />
+          </div>
+          <div className="row">
+            <DownloadButton {...this.state} />
+            <UploadButton loadGraphState={this.loadGraphState} />
+          </div>
+        </div>
       </div>
     );
   }

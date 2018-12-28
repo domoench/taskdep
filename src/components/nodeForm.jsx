@@ -23,12 +23,11 @@ class NodeForm extends React.Component {
   render() {
     const { value } = this.state;
     return (
-      <form onSubmit={this.handleSubmit}>
-        <label htmlFor="nodeForm">
-          New Task:
+      <form className="nodeform" onSubmit={this.handleSubmit}>
+        <label htmlFor="nodeForm" className="control-elem">
           <input type="text" id="nodeForm" value={value} onChange={this.handleChange} />
         </label>
-        <input type="submit" value="Submit" />
+        <input type="submit" value="Submit" className="control-elem" />
       </form>
     );
   }

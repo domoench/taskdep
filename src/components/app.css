@@ -3,6 +3,11 @@ body {
   margin: 20px;
 }
 
+.container {
+  width: 970px;
+  margin: 0 auto;
+}
+
 .graphviz {
   border: 1px solid gray;
 }
@@ -22,3 +27,48 @@ body {
 marker#arrow path {
 	fill: #999;
 }
+
+.row {
+  display: flex;
+}
+
+.col-6 {
+  flex: 0 0 50%;
+}
+
+.control {
+  margin: 0.3em;
+  padding: 0.3em;
+  background: #669999;
+}
+
+.control-elem {
+  padding: 0.5em;
+}
+
+.addform {
+}
+
+.addform .tabs {
+  display: flex;
+  padding-bottom: 0.5em;
+}
+
+.addform .tabs .tab {
+  flex: 50%;
+  text-align: center;
+}
+
+.addform .tabs .tab.selected {
+  background: green;
+}
+
+.editform {
+}
+
+.nodeform {
+}
+
+.linkform {
+}
+
