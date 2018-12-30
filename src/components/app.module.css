@@ -1,0 +1,39 @@
+.container {
+  width: 970px;
+  margin: 0 auto;
+}
+
+.graphviz {
+  background-color: #ffffff;
+}
+
+#arrow path {
+  fill: #006064;
+}
+
+.nodes circle {
+  fill: white;
+  stroke-width: 3;
+}
+
+.links line {
+  stroke-opacity: 0.6;
+  stroke-width: 4px;
+}
+
+.links line.selected {
+	stroke-dasharray: 10,2;
+}
+
+.controls {
+  margin-top: 1em;
+}
+
+.filebuttons {
+  margin-top: 1em;
+  display: flex;
+}
+
+.filebutton {
+  padding-right: 1em;
+}

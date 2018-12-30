@@ -1,27 +1,27 @@
 import React from 'react';
+import Typography from '@material-ui/core/Typography';
 import EditNode from './editNode';
 import EditLink from './editLink';
+import styles from './editForm.module.css';
 
 const EditForm = (props) => {
   const { selected } = props;
   const nodeIsSelected = selected.nodeId !== '';
   const linkIsSelected = selected.linkId !== '';
-  if(!nodeIsSelected && !linkIsSelected) {
-    return null;
-  } else {
-    return (
-      <div className="col-6">
-        <div className="editform control">
-          {nodeIsSelected
-            && <EditNode {...props} />
-          }
-          {linkIsSelected
-            && <EditLink {...props} />
-          }
-        </div>
-      </div>
-    );
-  }
+
+  return (
+    <div className={styles.editform}>
+      {(!nodeIsSelected && !linkIsSelected)
+        && <Typography align="center" variant="caption">Select a node or link in the graph to edit.</Typography>
+      }
+      {nodeIsSelected
+        && <EditNode {...props} />
+      }
+      {linkIsSelected
+        && <EditLink {...props} />
+      }
+    </div>
+  );
 };
 
 export default EditForm;

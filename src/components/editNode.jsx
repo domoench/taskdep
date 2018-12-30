@@ -1,6 +1,24 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
+import { withStyles } from '@material-ui/core/styles';
 import { selectedShape, nodesShape } from '../props';
+import styles from './editNode.module.css';
+
+// Material-UI overrides
+const muiStyles = theme => (
+  {
+    textField: {
+      marginLeft: theme.spacing.unit,
+      marginRight: theme.spacing.unit,
+      width: 300,
+    },
+    button: {
+      margin: theme.spacing.unit,
+    },
+  }
+);
 
 class EditNode extends React.Component {
   constructor(props) {
@@ -42,15 +60,36 @@ class EditNode extends React.Component {
   }
 
   render() {
+    const { classes } = this.props;
     const { value } = this.state;
     return (
-      <form onSubmit={this.handleSubmit}>
-        <label htmlFor="editNode">
-          Edit Node:
-          <input type="text" id="editNode" value={value} onChange={this.handleChange} />
-        </label>
-        <input type="submit" value="Save" />
-        <button type="button" onClick={this.handleDelete}>Delete</button>
+      <form className={styles.editnode}>
+        <TextField
+          id="editNode"
+          label="Edit Task"
+          value={value}
+          onChange={this.handleChange}
+          margin="dense"
+          className={classes.textField}
+        />
+
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={this.handleSubmit}
+          className={classes.button}
+        >
+          Save
+        </Button>
+
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={this.handleDelete}
+          className={classes.button}
+        >
+          Delete
+        </Button>
       </form>
     );
   }
@@ -62,6 +101,7 @@ EditNode.propTypes = {
   updateNodeText: PropTypes.func.isRequired,
   removeNode: PropTypes.func.isRequired,
   deselect: PropTypes.func.isRequired,
+  classes: PropTypes.object.isRequired,
 };
 
-export default EditNode;
+export default withStyles(muiStyles)(EditNode);

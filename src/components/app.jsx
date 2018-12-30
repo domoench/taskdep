@@ -1,20 +1,40 @@
 import React from 'react';
 import uuidv4 from 'uuid/v4';
-import './app.css';
 import { select, event } from 'd3-selection';
 import { zoom } from 'd3-zoom';
 import {
-  forceSimulation, forceLink, forceManyBody, forceCenter,
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCenter,
 } from 'd3-force';
 import { cloneDeep, filter } from 'lodash';
+import Grid from '@material-ui/core/Grid';
+import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import Typography from '@material-ui/core/Typography';
+import Paper from '@material-ui/core/Paper';
 import EditForm from './editForm';
 import AddForm from './addForm';
 import DownloadButton from './downloadButton';
 import UploadButton from './uploadButton';
 import nodeWeights from '../graph';
+import styles from './app.module.css';
 
-const width = 960;
+const width = 970;
 const height = 600;
+
+const primaryColor = '#006064';
+const secondaryColor = '#f57c00';
+const theme = createMuiTheme({
+  palette: {
+    primary: { main: primaryColor },
+    secondary: { main: secondaryColor },
+  },
+  typography: { useNextVariants: true },
+});
+
+// style selector
+const ss = className => `.${className}`;
 
 export default class App extends React.Component {
   constructor(props) {
@@ -36,10 +56,10 @@ export default class App extends React.Component {
 
   componentDidMount() {
     // Perform d3 setup that only needs to happen once
-    const g = select('.graphviz').append('g');
+    const g = select(ss(styles.graphviz)).append('g');
     // Arrow marker def
     g.append('svg:defs').append('svg:marker')
-      .attr('id', 'arrow')
+      .attr('id', styles.arrow)
       .attr('viewBox', '0 0 10 10')
       .attr('refX', 18)
       .attr('refY', 5)
@@ -49,8 +69,8 @@ export default class App extends React.Component {
       .append('svg:path')
       .attr('d', 'M 0 0 L 10 5 L 0 10 z');
 
-    g.append('g').attr('class', 'links');
-    g.append('g').attr('class', 'nodes');
+    g.append('g').attr('class', styles.links);
+    g.append('g').attr('class', styles.nodes);
 
     this.renderGraph();
   }
@@ -146,9 +166,13 @@ export default class App extends React.Component {
    *   https://beta.observablehq.com/@mbostock/d3-force-directed-graph
    *   http://bl.ocks.org/rkirsling/5001347
    *
-   * TODO Document somewhere
-   * - differences between react-maintained and d3 maintained nodes/links. e.g. in react
-   *   links refer to node IDs, while in d3 links refer to node objects.
+   * TODO
+   * - Document somewhere: the differences between react-maintained and d3 maintained
+   *   nodes/links. e.g. in react links refer to node IDs, while in d3 links refer to
+   *   node objects.
+   * - Should probably break the d3 graph vizualization logic to its own component
+   *   separate from the app. At that point the amount of state being managed may warrent
+   *   Redux.
    */
   renderGraph() {
     const { selected, nodes: inNodes, links: inLinks } = this.state;
@@ -164,7 +188,7 @@ export default class App extends React.Component {
     }
 
     // Set up zoom + pan
-    const svg = select('.graphviz');
+    const svg = select(ss(styles.graphviz));
     const g = svg.select('g');
     svg.call(zoom().on('zoom', () => {
       g.attr('transform', event.transform);
@@ -203,7 +227,7 @@ export default class App extends React.Component {
 
     // LINKS
     // Link data bind
-    let link = g.select('.links')
+    let link = g.select(ss(styles.links))
       .selectAll('line')
       .data(links, d => `${d.source}|${d.target}`);
 
@@ -215,7 +239,8 @@ export default class App extends React.Component {
 
     // Link enter + update
     link = linkEnter.merge(link)
-      .attr('marker-end', 'url(#arrow)')
+      .attr('marker-end', `url(#${styles.arrow})`)
+      .attr('stroke', theme.palette.primary.main)
       .classed('selected', d => `${d.source}|${d.target}` === selected.linkId)
       .on('click', (d) => {
         const linkId = `${d.source.id}|${d.target.id}`; // TODO why does d reference node objects here
@@ -224,7 +249,7 @@ export default class App extends React.Component {
 
     // NODES: Each node has an svg group containing a circle + a text label
     // Node group data bind
-    let node = g.select('.nodes').selectAll('g').data(nodes, d => d.id);
+    let node = g.select(ss(styles.nodes)).selectAll('g').data(nodes, d => d.id);
 
     // Node group exit
     node.exit().remove();
@@ -242,9 +267,11 @@ export default class App extends React.Component {
     node = nodeEnter.merge(node);
 
     // Circle enter + update on circles
+    const primColor = theme.palette.primary.light;
+    const secColor = theme.palette.secondary.light;
     node.select('circle')
-      .attr('r', 10)
-      .attr('fill', d => (d.id === selected.nodeId ? 'blue' : 'red'))
+      .attr('r', 9)
+      .attr('stroke', d => (d.id === selected.nodeId ? primColor : secColor))
       .on('click', (d) => {
         this.selectNode(d.id, simulation.nodes());
       });
@@ -252,8 +279,8 @@ export default class App extends React.Component {
     // Label enter + update
     node.select('text')
       .text(d => d.text)
-      .attr('x', 6)
-      .attr('y', 3);
+      .attr('x', 10)
+      .attr('y', -5);
 
     // Updates the line end and circle render positions to their new positions
     // resulting from this tick of force calculations
@@ -281,32 +308,54 @@ export default class App extends React.Component {
   render() {
     const { nodes, links, selected } = this.state;
     return (
-      <div className="container">
-        <svg width={width} height={height} className="graphviz" ref={this.appRef} />
-        <div className="controls">
-          <div className="row">
-            <AddForm
-              nodes={nodes}
-              links={links}
-              addNode={this.addNode}
-              addLink={this.addLink}
-            />
-            <EditForm
-              key={selected.nodeId} // Need key so selecting new node re-renders EditForm
-              updateNodeText={this.updateNodeText}
-              removeNode={this.removeNode}
-              removeLink={this.removeLink}
-              deselect={this.deselect}
-              selected={selected}
-              nodes={nodes}
-            />
-          </div>
-          <div className="row">
-            <DownloadButton {...this.state} />
-            <UploadButton loadGraphState={this.loadGraphState} />
+      <MuiThemeProvider theme={theme}>
+        <div className={styles.container}>
+          <Typography variant="h1">
+            TaskDep
+          </Typography>
+
+          {/* classnames d3 needs to refer to aren't generated by css modules */}
+          <svg width={width} height={height} className={styles.graphviz} ref={this.appRef} />
+
+          <div className={styles.controls}>
+            <Grid container spacing={8}>
+              <Grid item xs={6}>
+                <Paper>
+                  <AddForm
+                    nodes={nodes}
+                    links={links}
+                    addNode={this.addNode}
+                    addLink={this.addLink}
+                  />
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper>
+                  <EditForm
+                    key={selected.nodeId} // Need key so selecting new node re-renders EditForm
+                    updateNodeText={this.updateNodeText}
+                    removeNode={this.removeNode}
+                    removeLink={this.removeLink}
+                    deselect={this.deselect}
+                    selected={selected}
+                    nodes={nodes}
+                  />
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <div className={styles.filebuttons}>
+                  <div className={styles.filebutton}>
+                    <DownloadButton {...this.state} />
+                  </div>
+                  <div className={styles.filebutton}>
+                    <UploadButton loadGraphState={this.loadGraphState} />
+                  </div>
+                </div>
+              </Grid>
+            </Grid>
           </div>
         </div>
-      </div>
+      </MuiThemeProvider>
     );
   }
 }

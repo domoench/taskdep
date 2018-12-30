@@ -1,5 +1,23 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
+import { withStyles } from '@material-ui/core/styles';
+import styles from './nodeForm.module.css';
+
+// Material-UI overrides
+const muiStyles = theme => (
+  {
+    textField: {
+      marginLeft: theme.spacing.unit,
+      marginRight: theme.spacing.unit,
+      width: 300,
+    },
+    button: {
+      margin: theme.spacing.unit,
+    },
+  }
+);
 
 class NodeForm extends React.Component {
   constructor(props) {
@@ -22,12 +40,26 @@ class NodeForm extends React.Component {
 
   render() {
     const { value } = this.state;
+    const { classes } = this.props;
     return (
-      <form className="nodeform" onSubmit={this.handleSubmit}>
-        <label htmlFor="nodeForm" className="control-elem">
-          <input type="text" id="nodeForm" value={value} onChange={this.handleChange} />
-        </label>
-        <input type="submit" value="Submit" className="control-elem" />
+      <form className={styles.nodeform}>
+        <div className={styles.flex}>
+          <TextField
+            id="nodeForm"
+            label="Name"
+            value={value}
+            onChange={this.handleChange}
+            className={classes.textField}
+          />
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={this.handleSubmit}
+            className={classes.button}
+          >
+            Submit
+          </Button>
+        </div>
       </form>
     );
   }
@@ -35,6 +67,7 @@ class NodeForm extends React.Component {
 
 NodeForm.propTypes = {
   addNode: PropTypes.func.isRequired,
+  classes: PropTypes.object.isRequired,
 };
 
-export default NodeForm;
+export default withStyles(muiStyles)(NodeForm);

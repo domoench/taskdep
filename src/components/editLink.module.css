@@ -1,0 +1,8 @@
+.editlink {
+}
+
+.text {
+  display: flex;
+  align-content: baseline;
+  justify-content: space-evenly;
+}

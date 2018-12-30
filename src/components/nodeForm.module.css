@@ -1,0 +1,9 @@
+.nodeform {
+  padding: 1em;
+}
+
+.flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
