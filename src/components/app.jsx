@@ -241,7 +241,7 @@ export default class App extends React.Component {
     link = linkEnter.merge(link)
       .attr('marker-end', `url(#${styles.arrow})`)
       .attr('stroke', theme.palette.primary.main)
-      .classed('selected', d => `${d.source}|${d.target}` === selected.linkId)
+      .classed(styles.selected, d => `${d.source}|${d.target}` === selected.linkId)
       .on('click', (d) => {
         const linkId = `${d.source.id}|${d.target.id}`; // TODO why does d reference node objects here
         this.selectLink(linkId, simulation.nodes());
