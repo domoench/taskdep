@@ -6,6 +6,4 @@ I came up with this while working on [blubox](https://blubox.house) because I ke
 
 Demo of the current state: https://taskdep.netlify.com/
 
-As of 12/26/2018 the core functionality is all implemented, but I haven't done any nice styling (it's ugly as sin).
-
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
