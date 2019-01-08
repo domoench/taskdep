@@ -93,7 +93,7 @@ class LinkForm extends React.Component {
           color="primary"
           onClick={this.handleSubmit}
         >
-          Submit
+          Add
         </Button>
       </form>
     );

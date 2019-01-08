@@ -46,7 +46,7 @@ class NodeForm extends React.Component {
         <div className={styles.flex}>
           <TextField
             id="nodeForm"
-            label="Name"
+            label="Description"
             value={value}
             onChange={this.handleChange}
             className={classes.textField}
@@ -57,7 +57,7 @@ class NodeForm extends React.Component {
             onClick={this.handleSubmit}
             className={classes.button}
           >
-            Submit
+            Add
           </Button>
         </div>
       </form>

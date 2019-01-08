@@ -12,7 +12,7 @@ const EditForm = (props) => {
   return (
     <div className={styles.editform}>
       {(!nodeIsSelected && !linkIsSelected)
-        && <Typography align="center" variant="caption">Select a node or link in the graph to edit.</Typography>
+        && <Typography align="center" variant="caption">Select a node or link in the graph to edit or delete it.</Typography>
       }
       {nodeIsSelected
         && <EditNode {...props} />

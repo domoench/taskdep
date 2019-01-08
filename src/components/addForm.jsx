@@ -40,8 +40,8 @@ class AddForm extends Component {
             onChange={this.handleChange}
             fullWidth
           >
-            <Tab label="Add Task" />
-            <Tab label="Add Link" />
+            <Tab label="Add A Task" />
+            <Tab label="Add A Dependency" />
           </Tabs>
         </AppBar>
         {selected === NODE
